@@ -1,0 +1,26 @@
+@SoftwareCenter.Api_HostAddress = http://localhost:1337
+
+
+# Add A Vendor to the API
+
+POST {{SoftwareCenter.Api_HostAddress}}/vendors 
+Content-Type: application/json 
+
+{
+    "name": "Microsoft",
+    "site": "https://www.microsoft.com",
+    "poc": {
+        "name": {
+            "first": "William",
+            "last": "Gates"            
+        },
+        "contactMechanisms": [
+            { 
+                "primaryPhone": "800 bill-g"
+            },
+            {
+                "email": "billg@microsoft.com"
+            }
+        ]
+    }
+}
