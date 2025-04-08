@@ -3,24 +3,15 @@
 
 # Add A Vendor to the API
 
-POST {{SoftwareCenter.Api_HostAddress}}/vendors 
+POST {{SoftwareCenter.Api_HostAddress}}/commercial-vendors
 Content-Type: application/json 
 
 {
-    "name": "Microsoft",
-    "site": "https://www.microsoft.com",
-    "poc": {
-        "name": {
-            "first": "William",
-            "last": "Gates"            
-        },
-        "contactMechanisms": [
-            { 
-                "primaryPhone": "800 bill-g"
-            },
-            {
-                "email": "billg@microsoft.com"
-            }
-        ]
-    }
+    "name": "Jetbrains",
+    "site": "https://jetbrains.com",
+    "contactFirstName": "Khalid",
+    "contactLastName": "Abernathy",
+    "contactEmail": "khalid@jetbrains.com",
+    "contactPhone": "888 123-456"
 }
+
