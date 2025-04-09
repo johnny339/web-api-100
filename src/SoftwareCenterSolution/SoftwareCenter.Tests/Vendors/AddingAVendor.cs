@@ -1,13 +1,16 @@
 ﻿
 
 using System.Net.Http.Json;
+using System.Security.Claims;
 using Alba;
+using Alba.Security;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using SoftwareCenter.Api.Vendors;
 
 namespace SoftwareCenter.Tests.Vendors;
 
+[Trait("Category", "SystemTest")]
 public class AddingAVendor
 {
 
@@ -17,13 +20,10 @@ public class AddingAVendor
 
         var host = await AlbaHost.For<Program>(config =>
         {
-            var fakeIdentity = Substitute.For<IProvideIdentity>();
-            fakeIdentity.GetNameOfCallerAsync().Returns("darth-vader");
-            config.ConfigureServices(services =>
-            {
-                services.AddScoped<IProvideIdentity>(_ => fakeIdentity);
-            });
-        });
+
+        }, new AuthenticationStub()
+        .With("sub", "sue-jones"));
+       
         // about 15 lines from that documentation, start up the api with our Program.cs configuration.
 
         var vendorToAdd = new CommercialVendorCreateModel
@@ -37,8 +37,10 @@ public class AddingAVendor
         };
 
         // System Tests are "scenarios".  
-        var response = await host.Scenario(api =>
+       var response =  await host.Scenario(api =>
         {
+            api.WithClaim(new System.Security.Claims.Claim(ClaimTypes.Role, "SoftwareCenter"));
+            api.WithClaim(new System.Security.Claims.Claim(ClaimTypes.Role, "Manager"));
             api.Post.Json(vendorToAdd).ToUrl("/commercial-vendors");
             api.StatusCodeShouldBe(201);
         });
@@ -69,10 +71,3 @@ public class AddingAVendor
 }
 
 
-//public class FakeIdentityThing : IProvideIdentity
-//{
-//    public Task<string> GetNameOfCallerAsync()
-//    {
-//        return Task.FromResult("boba-fett");
-//    }
-//}

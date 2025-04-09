@@ -1,5 +1,7 @@
-﻿using FluentValidation;
+﻿using System.Security.Claims;
+using FluentValidation;
 using Marten;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace SoftwareCenter.Api.Vendors;
@@ -7,22 +9,24 @@ namespace SoftwareCenter.Api.Vendors;
 [ApiController]
 public class VendorsController(IDocumentSession documentSession, IProvideIdentity _identityLookup) : ControllerBase
 {
-
-
-
+    [Authorize(Policy ="SoftwareCenterManager")]
+    // you can't get to this unless you are authenticated (we know who you are)
+    // AND if you know who you are, you have to be a member of the SoftwareCenter role AND a Manager
     [HttpPost("/commercial-vendors")]
-    public async Task<ActionResult> AddAVendorAsync(
-        [FromBody] CommercialVendorCreateModel request
-        // todo: needs a validator.
+    public async Task<ActionResult> AddAVendorAsync([FromBody] CommercialVendorCreateModel request,
+        [FromServices] IValidator<CommercialVendorCreateModel> validator
+        //[FromServices] ClaimsPrincipal userPrincipal
         )
     {
-        // is it a valid request? All the required stuff there? right format, etc.
-        //var validationResults = validator.Validate( request );
-        //if (!validationResults.IsValid)
-        //{
 
-        //    return BadRequest(validationResults.ToDictionary()); // I'll talk about htis in a second
-        //}
+      
+
+
+        var validationResults = validator.Validate(request);
+        if (!validationResults.IsValid)
+        {
+            return BadRequest(validationResults.ToDictionary()); // I'll talk about htis in a second
+        }
 
         // create the thing we are going to save in the database (mapping)
         var entityToSave = new VendorEntity
@@ -33,11 +37,9 @@ public class VendorsController(IDocumentSession documentSession, IProvideIdentit
             AddedOn = DateTimeOffset.Now,
             AddedBy = await _identityLookup.GetNameOfCallerAsync(),
             VendorType = VendorTypes.Commercial,
-            Poc = new PointOfContact(
-            new NameContact(request.ContactFirstName, request.ContactLastName)
-            , new Dictionary<ContactMechanisms, string>
+            Poc = new PointOfContact(new Dictionary<ContactMechanisms, string>
             {
-                { ContactMechanisms.primaryPhone, request.ContactPhone},
+                { ContactMechanisms.primaryPhone, request.ContactPhone },
                 { ContactMechanisms.PrimaryEmail, request.ContactEmail }
             })
         };
@@ -49,11 +51,11 @@ public class VendorsController(IDocumentSession documentSession, IProvideIdentit
         return Created($"/commercial-vendors/{entityToSave.Id}", entityToSave);
     }
 
+    [Authorize]
     [HttpGet("/commercial-vendors/{id:guid}")]
     public async Task<ActionResult> GetVendorById(Guid id)
     {
-        var response = await documentSession.Query<VendorEntity>()
-            .SingleOrDefaultAsync(v => v.Id == id);
+        var response = await documentSession.Query<VendorEntity>().SingleOrDefaultAsync(v => v.Id == id);
         if (response is null)
         {
             return NotFound();
@@ -63,10 +65,7 @@ public class VendorsController(IDocumentSession documentSession, IProvideIdentit
             return Ok(response);
         }
     }
-
-
 }
-
 
 public interface IProvideIdentity
 {
